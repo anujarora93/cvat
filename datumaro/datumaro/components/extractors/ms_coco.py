@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: MIT
 
 from collections import OrderedDict
-import numpy as np
 import os.path as osp
 
 from pycocotools.coco import COCO
@@ -12,35 +11,12 @@ import pycocotools.mask as mask_utils
 
 from datumaro.components.extractor import (Extractor, DatasetItem,
     AnnotationType,
-    LabelObject, MaskObject, PointsObject, PolygonObject,
+    LabelObject, RleMask, PointsObject, PolygonObject,
     BboxObject, CaptionObject,
     LabelCategories, PointsCategories
 )
 from datumaro.components.formats.ms_coco import CocoTask, CocoPath
 from datumaro.util.image import lazy_image
-
-
-class RleMask(MaskObject):
-    # pylint: disable=redefined-builtin
-    def __init__(self, rle=None, label=None,
-            id=None, attributes=None, group=None):
-        lazy_decode = lambda: mask_utils.decode(rle).astype(np.bool)
-        super().__init__(image=lazy_decode, label=label,
-            id=id, attributes=attributes, group=group)
-
-        self._rle = rle
-    # pylint: enable=redefined-builtin
-
-    def area(self):
-        return mask_utils.area(self._rle)
-
-    def bbox(self):
-        return mask_utils.toBbox(self._rle)
-
-    def __eq__(self, other):
-        if not isinstance(other, __class__):
-            return super().__eq__(other)
-        return self._rle == other._rle
 
 
 class CocoExtractor(Extractor):
