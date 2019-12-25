@@ -185,13 +185,23 @@ class CocoExtractor(Extractor):
         if 'score' in ann:
             attributes['score'] = ann['score']
 
-        if ann_type is CocoTask.instances:
+        if ann_type in [CocoTask.instances, CocoTask.person_keypoints]:
             x, y, w, h = ann['bbox']
             label_id = self._parse_label(ann)
             group = None
 
             is_crowd = bool(ann['iscrowd'])
             attributes['is_crowd'] = is_crowd
+
+            if ann_type is CocoTask.person_keypoints:
+                group = ann_id
+                keypoints = ann['keypoints']
+                points = [p for i, p in enumerate(keypoints) if i % 3 != 2]
+                visibility = keypoints[2::3]
+                parsed_annotations.append(
+                    PointsObject(points, visibility, label=label_id,
+                        id=ann_id, attributes=attributes, group=group)
+                )
 
             segmentation = ann.get('segmentation')
             if segmentation is not None:
@@ -235,23 +245,6 @@ class CocoExtractor(Extractor):
                 LabelObject(label=label_id,
                     id=ann_id, attributes=attributes)
             )
-        elif ann_type is CocoTask.person_keypoints:
-            keypoints = ann['keypoints']
-            points = [p for i, p in enumerate(keypoints) if i % 3 != 2]
-            visibility = keypoints[2::3]
-            bbox = ann.get('bbox')
-            label_id = self._parse_label(ann)
-            group = None
-            if bbox is not None:
-                group = ann_id
-            parsed_annotations.append(
-                PointsObject(points, visibility, label=label_id,
-                    id=ann_id, attributes=attributes, group=group)
-            )
-            if bbox is not None:
-                parsed_annotations.append(
-                    BboxObject(*bbox, label=label_id, group=group)
-                )
         elif ann_type is CocoTask.captions:
             caption = ann['caption']
             parsed_annotations.append(
